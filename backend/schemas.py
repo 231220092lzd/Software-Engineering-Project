@@ -1,5 +1,4 @@
 # schemas.py
-# 定义API数据传输对象
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
@@ -16,7 +15,7 @@ class User(BaseModel):
     contact_info: str
 
     class Config:
-        orm_mode = True
+        from_attributes = True # 修正点
 
 # --- Product Schemas ---
 class ProductCreate(BaseModel):
@@ -34,7 +33,7 @@ class Product(BaseModel):
     image_urls: List[str]
 
     class Config:
-        orm_mode = True
+        from_attributes = True # 修正点
 
 # --- Comment Schemas ---
 class CommentCreate(BaseModel):
@@ -47,7 +46,7 @@ class Comment(BaseModel):
     likes: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True # 修正点
 
 # --- Order Schemas (Core Requirement) ---
 class OrderCreate(BaseModel):
@@ -72,4 +71,4 @@ class Coupon(BaseModel):
     expiry_date: datetime
 
     class Config:
-        orm_mode = True
+        from_attributes = True # 修正点

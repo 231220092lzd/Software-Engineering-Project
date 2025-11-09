@@ -1,0 +1,116 @@
+<!-- frontend/product-detail.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>商品详情 - 京西网</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fef4f4; }
+        .container { max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; display: flex; gap: 40px; }
+        .product-info { flex: 1; }
+        .product-info img { max-width: 100%; border: 1px solid #eee; }
+        .product-info h1 { font-size: 24px; }
+        .product-info .price { color: #ea4335; font-size: 28px; font-weight: bold; }
+        .product-actions button { padding: 15px 30px; font-size: 18px; margin-right: 15px; border-radius: 8px; cursor: pointer; }
+        .buy-btn { background-color: #ea4335; color: white; border: none; }
+        .fav-btn { background-color: #fce8e6; border: 1px solid #f28b82; }
+        .reviews { flex: 1; border-left: 1px solid #eee; padding-left: 40px; }
+        .reviews-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #ea4335; padding-bottom: 10px; }
+        .review-card { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .review-card p { margin: 5px 0; }
+        .review-author { display: flex; align-items: center; color: #555; }
+        .review-author .avatar { width: 30px; height: 30px; border-radius: 50%; background: #ccc; margin-right: 10px; }
+        .review-reply { font-size: 14px; color: #888; background: #f7f7f7; padding: 10px; margin-top: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="product-info">
+            <h3 style="color:#ea4335">京西！好物热卖！</h3>
+            <img id="product-image" src="https://via.placeholder.com/400x400.png?text=Loading..." alt="商品图片">
+            <h1 id="product-name">加载中...</h1>
+            <p id="product-description">...</p>
+            <p class="price" id="product-price">¥ ...</p>
+            <div class="product-actions">
+                <button class="buy-btn">立即购买</button>
+                <button class="fav-btn">☆ 收藏</button>
+            </div>
+        </div>
+        <div class="reviews">
+            <div class="reviews-header">
+                <h2>买家评价</h2>
+                <span id="review-rating">好评率 ...%</span>
+            </div>
+            <div id="review-list">
+                <!-- 评论将通过JS动态插入这里 -->
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const reviewList = document.getElementById('review-list');
+        
+        async function fetchProductDetails(productId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                const product = await response.json();
+                
+                document.getElementById('product-name').textContent = product.name;
+                document.getElementById('product-description').textContent = product.description;
+                document.getElementById('product-price').textContent = `¥ ${product.price}`;
+                // document.getElementById('product-image').src = product.image_urls[0]; // 如果有真实图片
+                
+                // 获取商品详情后，根据seller_id获取评论
+                fetchReviews(product.seller_id);
+
+            } catch (error) {
+                console.error('获取商品详情失败:', error);
+                document.querySelector('.product-info').innerHTML = '<h1>商品加载失败</h1>';
+            }
+        }
+
+        async function fetchReviews(sellerId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sellers/${sellerId}/comments`);
+                const reviews = await response.json();
+                renderReviews(reviews);
+            } catch (error) {
+                console.error('获取评论失败:', error);
+                 reviewList.innerHTML = '<p>评论加载失败。</p>';
+            }
+        }
+
+        function renderReviews(reviews) {
+            reviewList.innerHTML = '';
+            if (reviews.length === 0) {
+                 reviewList.innerHTML = '<p>暂无评论。</p>';
+                 return;
+            }
+            reviews.forEach(review => {
+                const card = document.createElement('div');
+                card.className = 'review-card';
+                card.innerHTML = `
+                    <div class="review-author">
+                        <div class="avatar"></div>
+                        <span>用户 ${review.user_id}</span>
+                    </div>
+                    <p>${review.content}</p>
+                    <div class="review-reply">商家回复：感谢支持</div>
+                `;
+                reviewList.appendChild(card);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+
+            if (productId) {
+                fetchProductDetails(productId);
+            } else {
+                document.querySelector('.container').innerHTML = '<h1>未找到该商品</h1><p>请返回商品列表页。</p>';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -83,3 +83,24 @@ def create_order(order: OrderCreate):
         seller_contact=seller["contact_info"],
         buyer_contact=buyer.contact_info
     )
+
+# api/users.py
+# ... (保留之前的所有代码)
+# 在文件末尾添加/修改以下代码
+
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+# 之前是一个无用的占位符，现在我们实现它
+@router.post("/login", tags=["Users"], summary="用户登录 (Req001)")
+def login(request: LoginRequest):
+    # 在真实世界中，你会从数据库查询用户并验证密码哈希
+    # 这里我们用模拟数据进行简单验证
+    user = mock_db_users.get("u001")
+    if user and request.username == user.username and request.password == "123456": # 假设密码是123456
+        return {"status": "success", "message": "Login successful", "user_id": user.user_id}
+    raise HTTPException(status_code=401, detail="Invalid username or password")
+

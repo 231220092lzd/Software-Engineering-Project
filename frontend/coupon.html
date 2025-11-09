@@ -1,0 +1,114 @@
+<!-- frontend/coupon.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>发放优惠券 - 京西网</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fef4f4; padding: 20px; }
+        .container { max-width: 800px; margin: auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; }
+        h1, h3 { text-align: center; color: #333; }
+        .logo { color: #ea4335; text-align: left;}
+        .main-content { display: flex; justify-content: space-around; gap: 20px; margin-top: 20px; }
+        .customer-panel { border: 1px solid #ccc; border-radius: 8px; width: 250px; }
+        .panel-header { background-color: #f7f7f7; padding: 10px; font-weight: bold; text-align: center; border-bottom: 1px solid #ccc; border-radius: 8px 8px 0 0; }
+        .customer-list { list-style: none; padding: 10px; margin: 0; max-height: 200px; overflow-y: auto; }
+        .customer-list li { padding: 8px 0; }
+        .actions { text-align: center; margin-left: 30px;}
+        .actions .input-group { margin: 20px 0; }
+        .actions input { padding: 10px; width: 150px; border: 1px solid #ccc; border-radius: 5px; }
+        .actions button { padding: 12px 25px; background-color: #ea4335; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 class="logo">京西！好物热卖！</h3>
+        <h1>发放您的优惠</h1>
+        <div class="main-content">
+            <div class="customer-panel">
+                <div class="panel-header">选择群群</div>
+                <ul class="customer-list" id="group-list">
+                    <!-- 顾客群将通过JS动态加载 -->
+                </ul>
+            </div>
+            <div class="customer-panel">
+                <div class="panel-header">选择顾客</div>
+                <ul class="customer-list" id="customer-list">
+                    <!-- 顾客将通过JS动态加载 -->
+                </ul>
+            </div>
+            <div class="actions">
+                <div class="input-group">
+                    <label for="coupon-amount">金额：</label>
+                    <input type="number" id="coupon-amount" placeholder="(请输入)">
+                </div>
+                <button id="send-coupon-btn">发放优惠券</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+
+        async function fetchCustomers() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sellers/me/customers`);
+                const data = await response.json();
+                renderLists(data.groups, data.customers);
+            } catch (error) {
+                console.error('获取顾客列表失败:', error);
+            }
+        }
+
+        function renderLists(groups, customers) {
+            const groupList = document.getElementById('group-list');
+            const customerList = document.getElementById('customer-list');
+            groupList.innerHTML = '';
+            customerList.innerHTML = '';
+
+            groups.forEach(group => {
+                groupList.innerHTML += `<li><input type="checkbox" name="group" value="${group.id}"> ${group.name}</li>`;
+            });
+            customers.forEach(customer => {
+                customerList.innerHTML += `<li><input type="checkbox" name="customer" value="${customer.id}"> ${customer.name}</li>`;
+            });
+        }
+        
+        async function sendCoupon() {
+            const amount = document.getElementById('coupon-amount').value;
+            if (!amount || amount <= 0) {
+                alert('请输入有效的优惠券金额！');
+                return;
+            }
+
+            // 计算30天后的过期日期
+            const expiryDate = new Date();
+            expiryDate.setDate(expiryDate.getDate() + 30);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/sellers/me/coupons`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        discount_value: parseFloat(amount),
+                        expiry_date: expiryDate.toISOString() // 转换为ISO格式字符串
+                    })
+                });
+
+                if (response.ok) {
+                    alert('优惠券发放成功！');
+                    document.getElementById('coupon-amount').value = '';
+                } else {
+                    alert('优惠券发放失败！');
+                }
+            } catch (error) {
+                console.error('请求失败:', error);
+                alert('无法连接到服务器。');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchCustomers);
+        document.getElementById('send-coupon-btn').addEventListener('click', sendCoupon);
+    </script>
+</body>
+</html>

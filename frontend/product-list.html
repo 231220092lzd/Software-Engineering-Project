@@ -1,0 +1,92 @@
+<!-- frontend/product-list.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>好物热卖 - 京西网</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fef4f4; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .logo { color: #ea4335; font-size: 24px; font-weight: bold; }
+        .search-bar { display: flex; flex-grow: 1; margin: 0 40px; }
+        .search-bar input { flex-grow: 1; padding: 10px; border: 2px solid #ea4335; border-right: none; border-radius: 8px 0 0 8px; }
+        .search-bar button { padding: 10px 20px; background-color: #ea4335; color: white; border: none; cursor: pointer; border-radius: 0 8px 8px 0; }
+        .my-favorites-btn { padding: 10px 20px; background: #fce8e6; border: 1px solid #f28b82; border-radius: 8px; cursor: pointer; }
+        .controls { margin-bottom: 20px; }
+        .controls button { margin-right: 10px; padding: 8px 15px; border: 1px solid #ccc; background: #fff; cursor: pointer; border-radius: 5px; }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .product-card { border: 1px solid #eee; text-align: center; padding-bottom: 10px; cursor: pointer; transition: box-shadow 0.3s; }
+        .product-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .product-card img { max-width: 100%; height: auto; }
+        .product-card .price { color: #ea4335; font-size: 20px; font-weight: bold; }
+        .product-card .name { font-size: 14px; color: #333; height: 40px; overflow: hidden; }
+        .product-card .favorite { color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="logo">京西！好物热卖！</span>
+            <div class="search-bar">
+                <input type="text" placeholder="搜索商品">
+                <button>搜索</button>
+            </div>
+            <button class="my-favorites-btn">我的收藏</button>
+        </div>
+        <div class="controls">
+            <button>高级选项</button>
+            <button id="sort-asc-btn">价格升序</button>
+            <button id="sort-desc-btn">价格降序</button>
+        </div>
+        <div class="product-grid" id="product-grid">
+            <!-- 商品将通过JS动态插入这里 -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const productGrid = document.getElementById('product-grid');
+
+        async function fetchProducts(sortBy = '') {
+            let url = `${API_BASE_URL}/products`;
+            if (sortBy) {
+                url += `?sort_by=${sortBy}`;
+            }
+            try {
+                const response = await fetch(url);
+                const products = await response.json();
+                renderProducts(products);
+            } catch (error) {
+                console.error('获取商品失败:', error);
+                productGrid.innerHTML = '<p>加载商品失败，请检查后端服务是否可用。</p>';
+            }
+        }
+
+        function renderProducts(products) {
+            productGrid.innerHTML = ''; // 清空现有内容
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.onclick = () => {
+                    // 点击商品卡片跳转到详情页
+                    window.location.href = `product-detail.html?id=${product.product_id}`;
+                };
+                card.innerHTML = `
+                    <img src="https://via.placeholder.com/200x200.png?text=Product+Image" alt="${product.name}">
+                    <p class="price">¥ ${product.price}</p>
+                    <p class="name">${product.name}</p>
+                    <span class="favorite">收藏 ☆</span>
+                `;
+                productGrid.appendChild(card);
+            });
+        }
+
+        document.getElementById('sort-asc-btn').addEventListener('click', () => fetchProducts('price_asc'));
+        document.getElementById('sort-desc-btn').addEventListener('click', () => fetchProducts('price_desc'));
+
+        // 页面加载时立即获取商品
+        document.addEventListener('DOMContentLoaded', () => fetchProducts());
+    </script>
+</body>
+</html>
