@@ -13,4 +13,5 @@ pip install "fastapi[all]"
 
 uvicorn main:app --reload
 
-use http://127.0.0.1:8000/docs to view the page
+访问网站页面:http://127.0.0.1:8000
+访问API文档:http://127.0.0.1:8000/api/docs

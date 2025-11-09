@@ -45,7 +45,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
         const productGrid = document.getElementById('product-grid');
 
         async function fetchProducts(sortBy = '') {
@@ -70,7 +70,7 @@
                 card.className = 'product-card';
                 card.onclick = () => {
                     // 点击商品卡片跳转到详情页
-                    window.location.href = `product-detail.html?id=${product.product_id}`;
+                    window.location.href = `/product-detail.html?id=${product.product_id}`;
                 };
                 card.innerHTML = `
                     <img src="https://via.placeholder.com/200x200.png?text=Product+Image" alt="${product.name}">

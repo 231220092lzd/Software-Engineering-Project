@@ -28,7 +28,7 @@
     </div>
 
     <script>
-        const API_BASE_URL = 'http://127.0.0.1:8000';
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
         document.getElementById('login-form').addEventListener('submit', async function(event) {
             event.preventDefault(); // 阻止表单默认提交行为
@@ -47,7 +47,7 @@
                     const result = await response.json();
                     alert('登录成功！');
                     // 登录成功后跳转到商品列表页
-                    window.location.href = 'product-list.html';
+                    window.location.href = '/product-list.html';
                 } else {
                     const error = await response.json();
                     alert(`登录失败: ${error.detail}`);
