@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>我的收藏 - 京西网</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fef4f4; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; min-height: 80vh; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #f28b82; padding-bottom: 15px;}
+        .logo { color: #ea4335; font-size: 24px; font-weight: bold; }
+        .back-link { padding: 10px 20px; background: #fce8e6; border: 1px solid #f28b82; border-radius: 8px; cursor: pointer; text-decoration: none; color: #c53727;}
+        .favorites-list { display: flex; flex-direction: column; gap: 20px; }
+        .favorite-item { display: flex; align-items: center; border: 1px solid #eee; padding: 15px; border-radius: 8px; transition: box-shadow 0.3s; }
+        .favorite-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .favorite-item img { width: 120px; height: 120px; object-fit: cover; margin-right: 20px; border-radius: 5px; }
+        .item-details { flex-grow: 1; }
+        .item-details h3 { margin: 0 0 10px; }
+        .item-details .price { color: #ea4335; font-size: 20px; font-weight: bold; }
+        .remove-btn { padding: 8px 15px; background-color: #fff; color: #ea4335; border: 1px solid #ea4335; border-radius: 5px; cursor: pointer; }
+        .empty-message { text-align: center; color: #888; font-size: 18px; padding: 100px 0;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="logo">我的收藏</span>
+            <a href="/product-list.html" class="back-link">返回商品列表</a>
+        </div>
+        <div id="favorites-list" class="favorites-list">
+            <!-- 收藏的商品将通过JS动态插入这里 -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+        // --- 收藏夹核心逻辑 ---
+        function getFavorites() {
+            const favorites = localStorage.getItem('userFavorites');
+            return favorites ? JSON.parse(favorites) : [];
+        }
+
+        function removeFavorite(productId) {
+            let favorites = getFavorites();
+            favorites = favorites.filter(id => id !== productId);
+            localStorage.setItem('userFavorites', JSON.stringify(favorites));
+        }
+        // --- 核心逻辑结束 ---
+
+        const favoritesContainer = document.getElementById('favorites-list');
+
+        async function loadFavorites() {
+            const favoriteIds = getFavorites();
+
+            favoritesContainer.innerHTML = ''; // 清空
+
+            if (favoriteIds.length === 0) {
+                favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
+                return;
+            }
+
+            for (const productId of favoriteIds) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                    if (!response.ok) continue; // 如果商品被删除了，就跳过
+                    const product = await response.json();
+                    
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'favorite-item';
+                    itemElement.id = `favorite-item-${product.product_id}`;
+                    itemElement.innerHTML = `
+                        <img src="https://via.placeholder.com/120x120.png?text=Product+Image" alt="${product.name}">
+                        <div class="item-details">
+                            <h3>${product.name}</h3>
+                            <p>${product.description}</p>
+                            <span class="price">¥ ${product.price}</span>
+                        </div>
+                        <button class="remove-btn" data-product-id="${product.product_id}">删除收藏</button>
+                    `;
+                    favoritesContainer.appendChild(itemElement);
+
+                } catch (error) {
+                    console.error(`加载商品 ${productId} 失败:`, error);
+                }
+            }
+        }
+
+        // 使用事件委托来处理删除按钮的点击事件
+        favoritesContainer.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('remove-btn')) {
+                const productId = event.target.getAttribute('data-product-id');
+                if (confirm('您确定要从收藏夹中移除此商品吗？')) {
+                    removeFavorite(productId);
+                    // 从DOM中移除元素以立即反馈
+                    const itemToRemove = document.getElementById(`favorite-item-${productId}`);
+                    if (itemToRemove) {
+                        itemToRemove.remove();
+                    }
+                    // 检查是否为空
+                    if (getFavorites().length === 0) {
+                        favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
+                    }
+                }
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', loadFavorites);
+    </script>
+</body>
+</html>

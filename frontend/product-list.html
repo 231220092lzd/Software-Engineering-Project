@@ -32,7 +32,7 @@
                 <input type="text" placeholder="搜索商品">
                 <button>搜索</button>
             </div>
-            <button class="my-favorites-btn">我的收藏</button>
+            <a href="/favorites.html" class="my-favorites-btn">我的收藏</a>
         </div>
         <div class="controls">
             <button>高级选项</button>
@@ -44,9 +44,11 @@
         </div>
     </div>
 
-    <script>
+       <script>
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
         const productGrid = document.getElementById('product-grid');
+
+        // --- 核心功能函数 ---
 
         async function fetchProducts(sortBy = '') {
             let url = `${API_BASE_URL}/products`;
@@ -55,11 +57,14 @@
             }
             try {
                 const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const products = await response.json();
                 renderProducts(products);
             } catch (error) {
                 console.error('获取商品失败:', error);
-                productGrid.innerHTML = '<p>加载商品失败，请检查后端服务是否可用。</p>';
+                productGrid.innerHTML = '<p>加载商品失败，请检查后端服务是否可用，或刷新页面重试。</p>';
             }
         }
 
@@ -68,25 +73,67 @@
             products.forEach(product => {
                 const card = document.createElement('div');
                 card.className = 'product-card';
-                card.onclick = () => {
-                    // 点击商品卡片跳转到详情页
-                    window.location.href = `/product-detail.html?id=${product.product_id}`;
-                };
+                // 将产品ID存储在卡片的data属性中，方便事件处理器获取
+                card.dataset.productId = product.product_id; 
+            
                 card.innerHTML = `
                     <img src="https://via.placeholder.com/200x200.png?text=Product+Image" alt="${product.name}">
                     <p class="price">¥ ${product.price}</p>
                     <p class="name">${product.name}</p>
-                    <span class="favorite">收藏 ☆</span>
+                    <button class="favorite-btn" data-product-id="${product.product_id}">收藏 ☆</button>
                 `;
                 productGrid.appendChild(card);
             });
         }
 
+        // --- 收藏夹逻辑 ---
+
+        function getFavorites() {
+            const favorites = localStorage.getItem('userFavorites');
+            return favorites ? JSON.parse(favorites) : [];
+        }
+
+        function addFavorite(productId) {
+            let favorites = getFavorites();
+            if (!favorites.includes(productId)) {
+                favorites.push(productId);
+                localStorage.setItem('userFavorites', JSON.stringify(favorites));
+                alert('商品已成功添加到收藏夹！');
+            } else {
+                alert('该商品已在您的收藏夹中。');
+            }
+        }
+
+        // --- 事件监听器 ---
+
+        // 1. 页面加载完成后，获取商品
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+        });
+        
+        // 2. 为排序按钮添加事件监听
         document.getElementById('sort-asc-btn').addEventListener('click', () => fetchProducts('price_asc'));
         document.getElementById('sort-desc-btn').addEventListener('click', () => fetchProducts('price_desc'));
 
-        // 页面加载时立即获取商品
-        document.addEventListener('DOMContentLoaded', () => fetchProducts());
+        // 3. 使用事件委托处理所有在 productGrid 内部的点击事件
+        productGrid.addEventListener('click', function(event) {
+            const target = event.target;
+            const card = target.closest('.product-card');
+
+            if (!card) return; // 如果点击的不是卡片内部，则不处理
+
+            const productId = card.dataset.productId;
+
+            // 判断点击的是否是收藏按钮
+            if (target.classList.contains('favorite-btn')) {
+                // 是收藏按钮：执行收藏逻辑
+                addFavorite(productId);
+            } else {
+                // 不是收藏按钮（即点击卡片的其他部分）：执行跳转逻辑
+                window.location.href = `/product-detail.html?id=${productId}`;
+            }
+        });
+
     </script>
 </body>
 </html>

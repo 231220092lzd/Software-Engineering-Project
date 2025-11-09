@@ -9,7 +9,7 @@ from api import products, users, sellers, recommendations
 app = FastAPI(
     title="全栈电商平台",
     description="一个集成了前端和后端的电商服务。",
-    version="1.1.0",
+    version="1.3.0",
 )
 
 # --- CORS配置 (保持不变) ---

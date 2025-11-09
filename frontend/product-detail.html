@@ -33,7 +33,7 @@
             <p class="price" id="product-price">¥ ...</p>
             <div class="product-actions">
                 <button class="buy-btn">立即购买</button>
-                <button class="fav-btn">☆ 收藏</button>
+                <button id="add-to-favorites-btn" class="fav-btn" data-product-id="">☆ 收藏</button>
             </div>
         </div>
         <div class="reviews">
@@ -100,7 +100,45 @@
                 reviewList.appendChild(card);
             });
         }
-
+        function getFavorites() {
+            const favorites = localStorage.getItem('userFavorites');
+            return favorites ? JSON.parse(favorites) : [];
+        }
+        function addFavorite(productId) {
+            let favorites = getFavorites();
+            if (!favorites.includes(productId)) {
+                favorites.push(productId);
+                localStorage.setItem('userFavorites', JSON.stringify(favorites));
+                alert('商品已成功添加到收藏夹！');
+            } else {
+                alert('该商品已在您的收藏夹中。');
+            }
+        }
+        // --- 核心逻辑结束 ---
+        // 在 fetchProductDetails 函数成功获取数据后，设置按钮的 data-product-id
+        async function fetchProductDetails(productId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                const product = await response.json();
+                
+                // ... (其他更新DOM的代码不变) ...
+                
+                // 新增：为收藏按钮设置产品ID
+                document.getElementById('add-to-favorites-btn').setAttribute('data-product-id', product.product_id);
+                fetchReviews(product.seller_id);
+            } catch (error) {
+                // ...
+            }
+        }
+        // 为新的收藏按钮添加点击事件监听
+        document.getElementById('add-to-favorites-btn').addEventListener('click', function() {
+            const productId = this.getAttribute('data-product-id');
+            if (productId) {
+                addFavorite(productId);
+            } else {
+                alert('无法收藏，商品信息加载失败。');
+            }
+        });
         document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
