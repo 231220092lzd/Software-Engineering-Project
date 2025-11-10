@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速注册 - 京西网</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: #fcebeb; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .register-container { background-color: white; border: 2px solid #f28b82; border-radius: 12px; padding: 40px; width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .register-container h1 { color: #333; margin-bottom: 30px;}
+        .register-container input { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        .register-container .register-btn { background-color: #ea4335; color: white; border: none; padding: 15px; border-radius: 8px; font-size: 16px; cursor: pointer; width: 100%; }
+        .register-container .login-link { color: #1a73e8; text-decoration: none; display: block; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="register-container">
+        <h1>创建您的京西账户</h1>
+        <form id="register-form">
+            <input type="text" id="username" name="username" placeholder="用户名" required>
+            <input type="password" id="password" name="password" placeholder="密码" required>
+            <input type="password" id="confirm-password" name="confirm-password" placeholder="确认密码" required>
+            <button type="submit" class="register-btn">立即注册</button>
+        </form>
+        <a href="/login.html" class="login-link">已有账户？立即登录</a>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+
+        document.getElementById('register-form').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (password !== confirmPassword) {
+                alert('两次输入的密码不一致！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                if (response.status === 201) {
+                    alert('注册成功！正在跳转到登录页面...');
+                    window.location.href = '/login.html';
+                } else {
+                    const error = await response.json();
+                    alert(`注册失败: ${error.detail}`);
+                }
+            } catch (error) {
+                console.error('请求失败:', error);
+                alert('无法连接到服务器，请确保后端服务已启动。');
+            }
+        });
+    </script>
+</body>
+</html>

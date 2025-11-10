@@ -1,106 +1,79 @@
-# api/users.py
-import uuid
-from fastapi import APIRouter, HTTPException, Body
-from schemas import UserCreate, User, OrderCreate, ContactExchange
-from models import User as UserModel
-from typing import List
-
-router = APIRouter()
-
-# 模拟数据库
-mock_db_users = {
-    "u001": UserModel(user_id="u001", username="Alice", password_hash="hashed_pw", contact_info="tel:13800138000"),
-}
-mock_db_orders = {}
-mock_db_sellers = {
-    "s001": {"seller_id": "s001", "shop_name": "TechShop", "contact_info": "email:seller1@tech.com"}
-}
-# 引用 products.py 中的模拟数据
-from .products import mock_db_products
-
-
-@router.post("/register", response_model=User, tags=["Users"], summary="用户注册 (Req001)")
-def register_user(user: UserCreate):
-    # 简单模拟，真实世界需要检查用户名是否已存在
-    user_id = f"u{len(mock_db_users) + 1:03d}"
-    # 真实世界需要对密码进行哈希处理
-    new_user = UserModel(user_id=user_id, username=user.username, password_hash="hashed_"+user.password, contact_info=user.contact_info)
-    mock_db_users[user_id] = new_user
-    return new_user
-
-# 登录接口通常会返回一个JWT Token，这里简化处理
-@router.post("/login", tags=["Users"], summary="用户登录 (Req001)")
-def login():
-    return {"message": "Login successful (mocked)."}
-
-
-@router.post("/users/me/favorites/{product_id}", status_code=204, tags=["Users"], summary="添加商品到收藏夹 (Req006)")
-def add_to_favorites(product_id: str):
-    # 假设当前用户是 u001
-    current_user_id = "u001"
-    if product_id not in mock_db_products:
-        raise HTTPException(status_code=404, detail="Product not found")
-    
-    user = mock_db_users.get(current_user_id)
-    if product_id not in user.favorites:
-        user.favorites.append(product_id)
-    # 204 No Content 表示成功，无需返回内容
-    return
-
-@router.get("/users/me/favorites", response_model=List[str], tags=["Users"], summary="查看收藏夹")
-def get_favorites():
-    # 假设当前用户是 u001
-    current_user_id = "u001"
-    return mock_db_users.get(current_user_id).favorites
-
-
-@router.post("/orders", response_model=ContactExchange, tags=["Orders"], summary="发起交易并交换联系方式 (Req005, Req011)")
-def create_order(order: OrderCreate):
-    """
-    核心交易流程:
-    不涉及支付，创建订单后立即返回买卖双方的联系方式。
-    """
-    # 假设当前用户是 "u001"
-    current_user_id = "u001"
-    
-    product = mock_db_products.get(order.product_id)
-    if not product:
-        raise HTTPException(status_code=404, detail="Product not found")
-        
-    buyer = mock_db_users.get(current_user_id)
-    seller = mock_db_sellers.get(product.seller_id)
-
-    if not buyer or not seller:
-         raise HTTPException(status_code=500, detail="Internal error: user or seller data missing")
-
-    order_id = f"order-{uuid.uuid4().hex[:6]}"
-    
-    # 将订单存入模拟数据库
-    mock_db_orders[order_id] = {"user_id": current_user_id, "product_id": order.product_id, "status": "交易达成"}
-
-    return ContactExchange(
-        order_id=order_id,
-        seller_contact=seller["contact_info"],
-        buyer_contact=buyer.contact_info
-    )
-
-# api/users.py
-# ... (保留之前的所有代码)
-# 在文件末尾添加/修改以下代码
-
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from pydantic import BaseModel
+
+# 导入新的库
+import bcrypt
+
+# 导入我们的模块
+import models
+import schemas
+from database import get_db
+
+router = APIRouter(prefix="/users", tags=["Users"])
+
+# --- 使用 bcrypt 进行密码处理 ---
+
+def get_password_hash(password: str) -> bytes:
+    """对字符串密码进行哈希，返回哈希后的字节串"""
+    # 1. 将密码字符串编码为 UTF-8 字节
+    password_bytes = password.encode('utf-8')
+    # 2. 生成盐值
+    salt = bcrypt.gensalt()
+    # 3. 哈希密码
+    hashed_password = bcrypt.hashpw(password_bytes, salt)
+    return hashed_password
+
+def verify_password(plain_password: str, hashed_password: bytes) -> bool:
+    """验证明文密码是否与哈希后的密码匹配"""
+    # 1. 将明文密码编码为 UTF-8 字节
+    plain_password_bytes = plain_password.encode('utf-8')
+    # 2. 使用 bcrypt.checkpw 进行验证
+    return bcrypt.checkpw(plain_password_bytes, hashed_password)
+
+# --- ---
+
+@router.post("/register", response_model=schemas.User, status_code=status.HTTP_201_CREATED)
+def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(models.User).filter(models.User.username == user.username).first()
+    if db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username already registered"
+        )
+    
+    # 直接调用我们新的哈希函数
+    hashed_password = get_password_hash(user.password)
+    
+    # 注意：我们的数据库模型需要能存储字节。VARCHAR/STRING 类型通常可以。
+    new_user = models.User(username=user.username, hashed_password=hashed_password.decode('utf-8'))
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+    return new_user
 
 class LoginRequest(BaseModel):
     username: str
     password: str
 
-# 之前是一个无用的占位符，现在我们实现它
-@router.post("/login", tags=["Users"], summary="用户登录 (Req001)")
-def login(request: LoginRequest):
-    # 在真实世界中，你会从数据库查询用户并验证密码哈希
-    # 这里我们用模拟数据进行简单验证
-    user = mock_db_users.get("u001")
-    if user and request.username == user.username and request.password == "123456": # 假设密码是123456
-        return {"status": "success", "message": "Login successful", "user_id": user.user_id}
-    raise HTTPException(status_code=401, detail="Invalid username or password")
+@router.post("/login")
+def login(request: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.username == request.username).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password"
+        )
+    
+    # 从数据库取出的哈希是字符串，需要编码回字节
+    hashed_password_bytes = user.hashed_password.encode('utf-8')
 
+    if not verify_password(request.password, hashed_password_bytes):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid username or password"
+        )
+        
+    return {"status": "success", "message": "Login successful", "user_id": user.id}

@@ -3,16 +3,20 @@
 from datetime import datetime
 from typing import List, Optional
 
-# 为了简化，我们使用简单的Python类来模拟数据库中的数据
-# 在真实应用中，这些会是 SQLAlchemy 或其他 ORM 的模型
+from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy.sql import func
+from database import Base
 
-class User:
-    def __init__(self, user_id: str, username: str, password_hash: str, contact_info: str):
-        self.user_id = user_id
-        self.username = username
-        self.password_hash = password_hash
-        self.contact_info = contact_info
-        self.favorites: List[str] = []  # 存 productId
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    created_at = Column(TIMESTAMP, server_default=func.now())
+
+# 注意：之前的模拟数据模型可以删除了，因为我们不再使用它们
+
 
 class Product:
     def __init__(self, product_id: str, name: str, price: float, description: str, seller_id: str, image_urls: List[str]):

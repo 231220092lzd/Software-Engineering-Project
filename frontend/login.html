@@ -22,7 +22,9 @@
             <input type="password" id="password" name="password" placeholder="Password" value="123456" required>
             <button type="submit" class="login-btn">同意协议并登录</button>
         </form>
-        <a href="#" class="quick-register">快速注册</a>
+        <div style="margin-top: 20px; text-align: center;">
+        <a href="/register.html" class="quick-register">快速注册</a>
+        </div>
         <p class="agreement">我已阅读并同意<<京西用户服务协议>><<用户隐私政策>></p>
         <p class="footer-slogan">京西网 -- 正品低价、品质保障、配送及时、轻松购物!</p>
     </div>
@@ -37,7 +39,7 @@
             const password = document.getElementById('password').value;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/login`, {
+                const response = await fetch(`${API_BASE_URL}/users/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })

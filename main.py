@@ -5,7 +5,10 @@ from fastapi.staticfiles import StaticFiles  # 1. 导入StaticFiles
 from fastapi.responses import FileResponse   # 2. 导入FileResponse
 
 from api import products, users, sellers, recommendations
-
+import models
+from database import engine
+# 这行代码会告诉SQLAlchemy根据我们的模型创建所有表 (如果它们不存在的话)
+models.Base.metadata.create_all(bind=engine)
 app = FastAPI(
     title="全栈电商平台",
     description="一个集成了前端和后端的电商服务。",

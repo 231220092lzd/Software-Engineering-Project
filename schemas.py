@@ -3,19 +3,22 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime
 
-# --- User Schemas ---
+from pydantic import BaseModel
+from typing import Optional
+
+# 用于创建新用户的模型 (输入)
 class UserCreate(BaseModel):
     username: str
     password: str
-    contact_info: str = Field(..., example="wechat:user123")
 
+# 用于从数据库读取用户信息的模型 (输出)
 class User(BaseModel):
-    user_id: str
+    id: int
     username: str
-    contact_info: str
 
     class Config:
-        from_attributes = True # 修正点
+        orm_mode = True # 让Pydantic能从ORM对象转换
+
 
 # --- Product Schemas ---
 class ProductCreate(BaseModel):
