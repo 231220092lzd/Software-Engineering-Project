@@ -32,7 +32,7 @@
                 <input type="text" placeholder="搜索商品">
                 <button>搜索</button>
             </div>
-            <a href="/favorites.html" class="my-favorites-btn">我的收藏</a>
+            <a href="favorites.html" class="my-favorites-btn">我的收藏</a>
         </div>
         <div class="controls">
             <button>高级选项</button>
@@ -74,13 +74,13 @@
                 const card = document.createElement('div');
                 card.className = 'product-card';
                 // 将产品ID存储在卡片的data属性中，方便事件处理器获取
-                card.dataset.productId = product.product_id; 
+                card.dataset.productId = product.id; 
             
                 card.innerHTML = `
                     <img src="https://via.placeholder.com/200x200.png?text=Product+Image" alt="${product.name}">
                     <p class="price">¥ ${product.price}</p>
                     <p class="name">${product.name}</p>
-                    <button class="favorite-btn" data-product-id="${product.product_id}">收藏 ☆</button>
+                    <button class="favorite-btn" data-product-id="${product.id}">收藏 ☆</button>
                 `;
                 productGrid.appendChild(card);
             });
@@ -88,19 +88,45 @@
 
         // --- 收藏夹逻辑 ---
 
-        function getFavorites() {
-            const favorites = localStorage.getItem('userFavorites');
-            return favorites ? JSON.parse(favorites) : [];
-        }
-
-        function addFavorite(productId) {
-            let favorites = getFavorites();
-            if (!favorites.includes(productId)) {
-                favorites.push(productId);
-                localStorage.setItem('userFavorites', JSON.stringify(favorites));
-                alert('商品已成功添加到收藏夹！');
-            } else {
-                alert('该商品已在您的收藏夹中。');
+        async function addFavorite(productId) {
+            const userId = sessionStorage.getItem('userId');
+            // 1. 增加前端校验
+            if (!userId) {
+                alert('请先登录！');
+                window.location.href = '/login.html';
+                return;
+            }
+            if (!productId) {
+                alert('无法收藏，商品ID无效。');
+                console.error("Product ID is null or undefined.");
+                return;
+            }
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites/${productId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                    // POST 请求即使没有 body，也最好发送 Content-Type 头
+                });
+                // 2. 改进错误处理
+                if (response.ok) { // response.ok 检查状态码是否在 200-299 范围
+                    alert('商品已成功添加到收藏夹！');
+                } else {
+                    // 解析后端返回的 JSON 错误信息
+                    const errorData = await response.json();
+                    // FastAPI 的验证错误 detail 是个数组，普通错误 detail 是字符串
+                    if (errorData.detail && typeof errorData.detail === 'string') {
+                        alert(`收藏失败: ${errorData.detail}`);
+                    } else {
+                        // 对于复杂的验证错误，给出一个通用提示，并在控制台打印详细信息
+                        alert('收藏失败，请求参数有误。');
+                        console.error('收藏失败，后端返回的详细错误:', errorData);
+                    }
+                }
+            } catch (error) {
+                console.error('收藏请求的网络连接失败:', error);
+                alert('无法连接到服务器，请稍后再试。');
             }
         }
 

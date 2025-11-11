@@ -32,42 +32,35 @@
     </div>
 
     <script>
+    // favorites.html script (完整替换)
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
-
-        // --- 收藏夹核心逻辑 ---
-        function getFavorites() {
-            const favorites = localStorage.getItem('userFavorites');
-            return favorites ? JSON.parse(favorites) : [];
-        }
-
-        function removeFavorite(productId) {
-            let favorites = getFavorites();
-            favorites = favorites.filter(id => id !== productId);
-            localStorage.setItem('userFavorites', JSON.stringify(favorites));
-        }
-        // --- 核心逻辑结束 ---
-
         const favoritesContainer = document.getElementById('favorites-list');
+        const userId = sessionStorage.getItem('userId');
 
         async function loadFavorites() {
-            const favoriteIds = getFavorites();
-
-            favoritesContainer.innerHTML = ''; // 清空
-
-            if (favoriteIds.length === 0) {
-                favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
+            if (!userId) {
+                favoritesContainer.innerHTML = '<div class="empty-message">请先<a href="/login.html">登录</a>查看您的收藏。</div>';
                 return;
             }
-
-            for (const productId of favoriteIds) {
-                try {
-                    const response = await fetch(`${API_BASE_URL}/products/${productId}`);
-                    if (!response.ok) continue; // 如果商品被删除了，就跳过
-                    const product = await response.json();
-                    
+        
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites`);
+                if (!response.ok) {
+                    throw new Error('Failed to load favorites');
+                }
+                const products = await response.json();
+            
+                favoritesContainer.innerHTML = ''; // 清空
+            
+                if (products.length === 0) {
+                    favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
+                    return;
+                }
+            
+                products.forEach(product => {
                     const itemElement = document.createElement('div');
                     itemElement.className = 'favorite-item';
-                    itemElement.id = `favorite-item-${product.product_id}`;
+                    itemElement.id = `favorite-item-${product.id}`;
                     itemElement.innerHTML = `
                         <img src="https://via.placeholder.com/120x120.png?text=Product+Image" alt="${product.name}">
                         <div class="item-details">
@@ -75,31 +68,47 @@
                             <p>${product.description}</p>
                             <span class="price">¥ ${product.price}</span>
                         </div>
-                        <button class="remove-btn" data-product-id="${product.product_id}">删除收藏</button>
+                        <button class="remove-btn" data-product-id="${product.id}">删除收藏</button>
                     `;
                     favoritesContainer.appendChild(itemElement);
-
-                } catch (error) {
-                    console.error(`加载商品 ${productId} 失败:`, error);
-                }
+                });
+            
+            } catch (error) {
+                console.error('加载收藏失败:', error);
+                favoritesContainer.innerHTML = '<div class="empty-message">加载收藏失败，请稍后再试。</div>';
             }
         }
 
-        // 使用事件委托来处理删除按钮的点击事件
-        favoritesContainer.addEventListener('click', function(event) {
-            if (event.target && event.target.classList.contains('remove-btn')) {
-                const productId = event.target.getAttribute('data-product-id');
-                if (confirm('您确定要从收藏夹中移除此商品吗？')) {
-                    removeFavorite(productId);
+        async function removeFavorite(productId) {
+            if (!userId) return;
+        
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites/${productId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
                     // 从DOM中移除元素以立即反馈
                     const itemToRemove = document.getElementById(`favorite-item-${productId}`);
                     if (itemToRemove) {
                         itemToRemove.remove();
                     }
                     // 检查是否为空
-                    if (getFavorites().length === 0) {
+                    if (favoritesContainer.children.length === 0) {
                         favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
                     }
+                } else {
+                    alert('删除失败！');
+                }
+            } catch (error) {
+                console.error('删除请求失败:', error);
+            }
+        }
+
+        favoritesContainer.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('remove-btn')) {
+                const productId = event.target.getAttribute('data-product-id');
+                if (confirm('您确定要从收藏夹中移除此商品吗？')) {
+                    removeFavorite(productId);
                 }
             }
         });

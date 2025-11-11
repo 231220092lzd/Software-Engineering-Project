@@ -1,11 +1,15 @@
-# models.py
-#定义核心业务对象
-from datetime import datetime
-from typing import List, Optional
+# models.py (完整修改版)
 
-from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy import (Column, Integer, String, Float, TIMESTAMP, ForeignKey, Table)
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
+
+# 用户-商品 收藏关联表 (多对多关系)
+user_favorites = Table('user_favorites', Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('product_id', Integer, ForeignKey('products.id'), primary_key=True)
+)
 
 class User(Base):
     __tablename__ = "users"
@@ -15,42 +19,37 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now())
 
-# 注意：之前的模拟数据模型可以删除了，因为我们不再使用它们
+    # 建立与收藏商品的关系
+    favorite_products = relationship("Product", secondary=user_favorites, back_populates="favorited_by_users")
 
+class Seller(Base):
+    __tablename__ = "sellers"
+    id = Column(Integer, primary_key=True, index=True)
+    shop_name = Column(String(100), nullable=False)
+    contact_info = Column(String(100))
+    
+    products = relationship("Product", back_populates="seller")
 
-class Product:
-    def __init__(self, product_id: str, name: str, price: float, description: str, seller_id: str, image_urls: List[str]):
-        self.product_id = product_id
-        self.name = name
-        self.price = price
-        self.description = description
-        self.seller_id = seller_id
-        self.image_urls = image_urls
+class Product(Base):
+    __tablename__ = "products"
 
-class Seller:
-    def __init__(self, seller_id: str, shop_name: str, contact_info: str):
-        self.seller_id = seller_id
-        self.shop_name = shop_name
-        self.contact_info = contact_info
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    price = Column(Float, nullable=False)
+    description = Column(String(500))
+    # 使用 ForeignKey 关联到商家
+    seller_id = Column(Integer, ForeignKey("sellers.id"))
+    image_url = Column(String(255)) # 简化为单个图片URL
 
-class Comment:
-    def __init__(self, comment_id: str, content: str, user_id: str, likes: int = 0):
-        self.comment_id = comment_id
-        self.content = content
-        self.user_id = user_id
-        self.likes = likes
+    seller = relationship("Seller", back_populates="products")
+    favorited_by_users = relationship("User", secondary=user_favorites, back_populates="favorite_products")
 
-class Coupon:
-    def __init__(self, coupon_id: str, seller_id: str, discount_value: float, expiry_date: datetime):
-        self.coupon_id = coupon_id
-        self.seller_id = seller_id
-        self.discount_value = discount_value
-        self.expiry_date = expiry_date
-
-class Order:
-    def __init__(self, order_id: str, user_id: str, product_id: str, status: str = "交易达成"):
-        self.order_id = order_id
-        self.user_id = user_id
-        self.product_id = product_id
-        self.status = status
+class Comment(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    content = Column(String(500), nullable=False)
+    likes = Column(Integer, default=0)
+    
+    user_id = Column(Integer, ForeignKey("users.id"))
+    product_id = Column(Integer, ForeignKey("products.id")) # 评论应与商品关联
 

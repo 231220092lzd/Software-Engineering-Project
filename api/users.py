@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-
+from typing import List
 # 导入新的库
 import bcrypt
 
@@ -77,3 +77,33 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
         )
         
     return {"status": "success", "message": "Login successful", "user_id": user.id}
+
+@router.post("/{user_id}/favorites/{product_id}", status_code=status.HTTP_201_CREATED, summary="添加收藏")
+def add_favorite(user_id: int, product_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not user or not product:
+        raise HTTPException(status_code=404, detail="User or Product not found")
+    if product in user.favorite_products:
+        raise HTTPException(status_code=400, detail="Product already in favorites")
+    user.favorite_products.append(product)
+    db.commit()
+    return {"status": "success", "message": "Favorite added"}
+@router.get("/{user_id}/favorites", response_model=List[schemas.Product], summary="获取用户的收藏列表")
+def get_favorites(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user.favorite_products
+@router.delete("/{user_id}/favorites/{product_id}", status_code=status.HTTP_204_NO_CONTENT, summary="删除收藏")
+def remove_favorite(user_id: int, product_id: int, db: Session = Depends(get_db)):
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not user or not product:
+        raise HTTPException(status_code=404, detail="User or Product not found")
+    
+    if product not in user.favorite_products:
+        return # 如果不存在，直接返回成功
+    user.favorite_products.remove(product)
+    db.commit()
+    return

@@ -33,7 +33,7 @@
             <p class="price" id="product-price">¥ ...</p>
             <div class="product-actions">
                 <button class="buy-btn">立即购买</button>
-                <button id="add-to-favorites-btn" class="fav-btn" data-product-id="">☆ 收藏</button>
+                <button id="add-to-favorites-btn" class="fav-btn">☆ 收藏</button>
             </div>
         </div>
         <div class="reviews">
@@ -49,26 +49,31 @@
     <script>
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
         const reviewList = document.getElementById('review-list');
-        
+        // --- 核心功能函数 ---
+        // 修正 1: 合并了两个重复的函数，并修正了 product.product_id
         async function fetchProductDetails(productId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/products/${productId}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const product = await response.json();
-                
+
+                // 更新页面内容
                 document.getElementById('product-name').textContent = product.name;
                 document.getElementById('product-description').textContent = product.description;
                 document.getElementById('product-price').textContent = `¥ ${product.price}`;
-                // document.getElementById('product-image').src = product.image_urls[0]; // 如果有真实图片
-                
+
+                // 修正 2: 使用正确的属性名 'product.id' 来设置 data-product-id
+                document.getElementById('add-to-favorites-btn').setAttribute('data-product-id', product.id);
+
                 // 获取商品详情后，根据seller_id获取评论
                 fetchReviews(product.seller_id);
-
             } catch (error) {
                 console.error('获取商品详情失败:', error);
                 document.querySelector('.product-info').innerHTML = '<h1>商品加载失败</h1>';
             }
         }
-
         async function fetchReviews(sellerId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/sellers/${sellerId}/comments`);
@@ -76,10 +81,9 @@
                 renderReviews(reviews);
             } catch (error) {
                 console.error('获取评论失败:', error);
-                 reviewList.innerHTML = '<p>评论加载失败。</p>';
+                reviewList.innerHTML = '<p>评论加载失败。</p>';
             }
         }
-
         function renderReviews(reviews) {
             reviewList.innerHTML = '';
             if (reviews.length === 0) {
@@ -100,53 +104,59 @@
                 reviewList.appendChild(card);
             });
         }
-        function getFavorites() {
-            const favorites = localStorage.getItem('userFavorites');
-            return favorites ? JSON.parse(favorites) : [];
-        }
-        function addFavorite(productId) {
-            let favorites = getFavorites();
-            if (!favorites.includes(productId)) {
-                favorites.push(productId);
-                localStorage.setItem('userFavorites', JSON.stringify(favorites));
-                alert('商品已成功添加到收藏夹！');
-            } else {
-                alert('该商品已在您的收藏夹中。');
+        // 收藏功能函数 (这个函数本身是正确的，无需修改)
+        async function addFavorite(productId) {
+            const userId = sessionStorage.getItem('userId');
+            if (!userId) {
+                alert('请先登录！');
+                window.location.href = '/login.html';
+                return;
             }
-        }
-        // --- 核心逻辑结束 ---
-        // 在 fetchProductDetails 函数成功获取数据后，设置按钮的 data-product-id
-        async function fetchProductDetails(productId) {
+            if (!productId || productId === 'undefined' || productId === 'null') { // 增加更严格的检查
+                alert('无法收藏，商品ID无效。');
+                console.error("Product ID is invalid:", productId);
+                return;
+            }
             try {
-                const response = await fetch(`${API_BASE_URL}/products/${productId}`);
-                const product = await response.json();
-                
-                // ... (其他更新DOM的代码不变) ...
-                
-                // 新增：为收藏按钮设置产品ID
-                document.getElementById('add-to-favorites-btn').setAttribute('data-product-id', product.product_id);
-                fetchReviews(product.seller_id);
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites/${productId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    alert('商品已成功添加到收藏夹！');
+                } else {
+                    const errorData = await response.json();
+                    if (errorData.detail && typeof errorData.detail === 'string') {
+                        alert(`收藏失败: ${errorData.detail}`);
+                    } else {
+                        alert('收藏失败，请求参数有误。');
+                        console.error('收藏失败，后端返回的详细错误:', errorData);
+                    }
+                }
             } catch (error) {
-                // ...
+                console.error('收藏请求的网络连接失败:', error);
+                alert('无法连接到服务器，请稍后再试。');
             }
         }
-        // 为新的收藏按钮添加点击事件监听
+        // --- 事件监听器 ---
+        // 页面加载时，获取URL中的ID并拉取数据
+        document.addEventListener('DOMContentLoaded', () => {
+            const params = new URLSearchParams(window.location.search);
+            const productId = params.get('id');
+            if (productId) {
+                fetchProductDetails(productId);
+            } else {
+                document.querySelector('.container').innerHTML = '<h1>未找到该商品</h1><p>请返回商品列表页。</p>';
+            }
+        });
+        // 为收藏按钮添加点击事件监听
         document.getElementById('add-to-favorites-btn').addEventListener('click', function() {
             const productId = this.getAttribute('data-product-id');
             if (productId) {
                 addFavorite(productId);
             } else {
-                alert('无法收藏，商品信息加载失败。');
-            }
-        });
-        document.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const productId = params.get('id');
-
-            if (productId) {
-                fetchProductDetails(productId);
-            } else {
-                document.querySelector('.container').innerHTML = '<h1>未找到该商品</h1><p>请返回商品列表页。</p>';
+                // 这个警告会在商品详情还没加载出来时点击按钮触发
+                alert('无法收藏，请等待商品信息加载完成。');
             }
         });
     </script>
