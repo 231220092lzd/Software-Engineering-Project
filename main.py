@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 # 导入所有模块
-from api import products, users, sellers, recommendations
+from api import products, users, sellers, recommendations, ai
 import models
 from database import engine
 
@@ -37,7 +37,7 @@ api_router.include_router(users.router)
 api_router.include_router(products.router)
 api_router.include_router(sellers.router)
 api_router.include_router(recommendations.router)
-# 错误修正：移除了多余的 api_router.include_router()
+api_router.include_router(ai.router)
 app.mount("/api", api_router)
 
 
