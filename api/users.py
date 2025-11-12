@@ -57,8 +57,21 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+# --- 把你原来的 login 函数替换成下面这个版本 ---
 @router.post("/login")
 def login(request: LoginRequest, db: Session = Depends(get_db)):
+    # 1. 检查是否为硬编码的管理员账户
+    if request.username == "root" and request.password == "root123":
+        return {
+            "status": "success",
+            "message": "Admin login successful",
+            "user_id": 0,  # 使用一个特殊ID，比如0，来代表管理员
+            "role": "admin" # 返回一个角色字段，让前端知道这是管理员
+        }
+    # 2. 如果不是管理员，执行原有的普通用户数据库查询和密码验证逻辑
     user = db.query(models.User).filter(models.User.username == request.username).first()
     
     if not user:
@@ -69,14 +82,20 @@ def login(request: LoginRequest, db: Session = Depends(get_db)):
     
     # 从数据库取出的哈希是字符串，需要编码回字节
     hashed_password_bytes = user.hashed_password.encode('utf-8')
-
+    # 使用你已有的 verify_password 函数进行验证
     if not verify_password(request.password, hashed_password_bytes):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password"
         )
         
-    return {"status": "success", "message": "Login successful", "user_id": user.id}
+    # 3. 在普通用户成功登录的返回结果中，也添加 role 字段
+    return {
+        "status": "success",
+        "message": "Login successful",
+        "user_id": user.id,
+        "role": "customer" # 普通用户返回 customer 角色
+    }
 
 @router.post("/{user_id}/favorites/{product_id}", status_code=status.HTTP_201_CREATED, summary="添加收藏")
 def add_favorite(user_id: int, product_id: int, db: Session = Depends(get_db)):

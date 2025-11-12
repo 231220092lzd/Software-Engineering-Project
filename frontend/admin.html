@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>管理员后台 - 京西网</title>
+    <style>
+        body { font-family: sans-serif; background-color: #fef4f4; }
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; }
+        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f28b82; padding-bottom: 15px; margin-bottom: 20px;}
+        .logo { color: #ea4335; font-size: 24px; font-weight: bold; }
+        .logout-btn { padding: 8px 15px; background: #fce8e6; border: 1px solid #f28b82; border-radius: 8px; cursor: pointer; text-decoration: none; color: #c53727;}
+        .admin-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .panel-card { border: 1px solid #eee; padding: 20px; border-radius: 8px; }
+        .panel-card h2 { margin-top: 0; color: #ea4335; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input, .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        .action-btn { padding: 12px 25px; background-color: #ea4335; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        .link-btn { display: block; text-align: center; background-color: #1a73e8;box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <span class="logo">管理员后台</span>
+            <button id="logout-btn" class="logout-btn">退出登录</button>
+        </div>
+
+        <div class="admin-panel">
+            <div class="panel-card" id="product-management">
+                <h2>商品管理</h2>
+                <form id="add-product-form">
+                    <div class="form-group">
+                        <label for="name">商品名称:</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">商品描述:</label>
+                        <textarea id="description" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">价格:</label>
+                        <input type="number" id="price" step="0.01" required>
+                    </div>
+                    <button type="submit" class="action-btn">添加商品</button>
+                </form>
+                <hr>
+                <div class="form-group">
+                    <label for="delete-id">要删除的商品ID:</label>
+                    <input type="number" id="delete-id" placeholder="输入商品ID">
+                </div>
+                <button id="delete-product-btn" class="action-btn">删除商品</button>
+                <hr style="margin-top: 20px;">
+                <h3>现有商品列表</h3>
+                <div id="admin-product-list" style="max-height: 300px; overflow-y: auto; border: 1px solid #eee; padding: 10px;">
+                    <!-- 商品列表将通过JS动态加载到这里 -->
+                    <p>正在加载商品...</p>
+                </div>
+            </div>
+
+            <div class="panel-card" id="coupon-management">
+                <h2>运营工具</h2>
+                <p>管理和运营您的电商平台。</p>
+                <a href="/coupon.html" class="action-btn link-btn">发放优惠券</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000/api';
+        async function fetchAndRenderProducts() {
+            const productListDiv = document.getElementById('admin-product-list');
+            try {
+                const response = await fetch(`${API_BASE_URL}/products`);
+                if (!response.ok) throw new Error('获取商品失败');
+
+                const products = await response.json();
+
+                if (products.length === 0) {
+                    productListDiv.innerHTML = '<p>当前没有商品。</p>';
+                    return;
+                }
+
+                // 使用表格来清晰地展示
+                let tableHTML = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th style="text-align: left; padding: 5px; border-bottom: 1px solid #ccc;">ID</th>
+                                <th style="text-align: left; padding: 5px; border-bottom: 1px solid #ccc;">名称</th>
+                                <th style="text-align: left; padding: 5px; border-bottom: 1px solid #ccc;">价格</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                products.forEach(product => {
+                    tableHTML += `
+                        <tr>
+                            <td style="padding: 5px; border-bottom: 1px solid #eee;">${product.id}</td>
+                            <td style="padding: 5px; border-bottom: 1px solid #eee;">${product.name}</td>
+                            <td style="padding: 5px; border-bottom: 1px solid #eee;">¥${product.price}</td>
+                        </tr>
+                    `;
+                });
+                tableHTML += '</tbody></table>';
+
+                productListDiv.innerHTML = tableHTML;
+            } catch (error) {
+                productListDiv.innerHTML = '<p style="color: red;">加载商品列表失败。</p>';
+            }
+        }
+        // 安全检查：如果不是管理员，踢回登录页
+        if (sessionStorage.getItem('userRole') !== 'admin') {
+            alert('您没有权限访问此页面！');
+            window.location.href = '/login.html';
+        }
+        document.addEventListener('DOMContentLoaded', fetchAndRenderProducts);
+        // 添加商品逻辑
+        document.getElementById('add-product-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const description = document.getElementById('description').value;
+            const price = parseFloat(document.getElementById('price').value);
+
+            if (!name || !description || isNaN(price) || price <= 0) {
+                alert('请填写所有有效的商品信息！');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/products`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, description, price })
+                });
+
+                if (response.status === 201) {
+                    alert('商品添加成功！');
+                    e.target.reset(); // 清空表单
+                    fetchAndRenderProducts();
+                } else {
+                    const error = await response.json();
+                    alert(`添加失败: ${error.detail}`);
+                }
+            } catch (error) {
+                alert('请求失败，请检查网络和后端服务。');
+            }
+        });
+
+        // 删除商品逻辑
+        document.getElementById('delete-product-btn').addEventListener('click', async () => {
+            const productId = document.getElementById('delete-id').value;
+            if (!productId) {
+                alert('请输入要删除的商品ID！');
+                return;
+            }
+
+            if (!confirm(`您确定要删除ID为 ${productId} 的商品吗？此操作不可撤销！`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.status === 204) {
+                    alert('商品删除成功！');
+                    document.getElementById('delete-id').value = '';
+                    fetchAndRenderProducts();
+                } else if (response.status === 404) {
+                    alert('删除失败：未找到该商品。');
+                } else {
+                    alert('删除失败，有用户收藏了你的商品。');
+                }
+            } catch (error) {
+                alert('请求失败，请检查网络和后端服务。');
+            }
+        });
+
+        // 退出登录逻辑
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            sessionStorage.clear();
+            alert('已退出登录。');
+            window.location.href = '/login.html';
+        });
+    </script>
+</body>
+</html>

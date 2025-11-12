@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 
 # 导入所有模块
-from api import products, users, sellers, recommendations, ai
+from api import products, users, sellers, recommendations, ai, admin
 import models
 from database import engine
 
@@ -38,6 +38,7 @@ api_router.include_router(products.router)
 api_router.include_router(sellers.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(ai.router)
+api_router.include_router(admin.router) 
 app.mount("/api", api_router)
 
 
@@ -73,7 +74,9 @@ async def serve_favorites_page():
 async def serve_coupon_page():
     return "frontend/coupon.html"
 
-
+@app.get("/admin.html", response_class=FileResponse, tags=["Frontend Pages"])
+async def serve_admin_page():
+    return "frontend/admin.html"
 # --- 3. 挂载静态文件目录 ---
 # (这个必须放在所有精确的HTML页面路由之后)
 app.mount("/", StaticFiles(directory="frontend"), name="static")

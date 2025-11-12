@@ -33,10 +33,18 @@
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
 
         document.getElementById('login-form').addEventListener('submit', async function(event) {
-            event.preventDefault(); // 阻止表单默认提交行为
+            event.preventDefault();
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
+
+            // 预先检查前端的管理员登录，可以减少不必要的请求
+            if (username === 'root' && password === 'root123') {
+                alert('管理员登录成功！');
+                sessionStorage.setItem('userRole', 'admin'); // 存储角色信息
+                window.location.href = '/admin.html'; // 跳转到管理员页面
+                return; // 结束函数
+            }
 
             try {
                 const response = await fetch(`${API_BASE_URL}/users/login`, {
@@ -48,9 +56,16 @@
                 if (response.ok) {
                     const result = await response.json();
                     alert('登录成功！');
-                    // 保存用户ID，以便其他页面使用
-                    sessionStorage.setItem('userId', result.user_id); 
-                    window.location.href = '/product-list.html';
+                    
+                    // 根据后端返回的角色进行跳转
+                    if (result.role === 'admin') {
+                        sessionStorage.setItem('userRole', 'admin');
+                        window.location.href = '/admin.html';
+                    } else {
+                        sessionStorage.setItem('userId', result.user_id);
+                        sessionStorage.setItem('userRole', 'customer');
+                        window.location.href = '/product-list.html';
+                    }
                 } else {
                     const error = await response.json();
                     alert(`登录失败: ${error.detail}`);
