@@ -21,21 +21,39 @@ uvicorn main:app --reload
 
 ## File Structure
 --
+
 +main.py   //主程序，创建FastAPI实例，作为中控调度
+
 +database.py  //连接数据库，创建engine和SessionLocal与数据库通信
+
 +models.py  //定义不同类的属性并将其映射到数据库中
+
 +schemas.py //定义数据进出API时的数据结构
+
 +seed.py //一个初始化脚本，用于给数据库创建一些初始化商品
+
 +api +  //api文件夹负责处理数据和业务逻辑
+
 |    +---recommendations.py 
+
 |    +---products.py
+
 |    +---sellers.py
+
 |    +---users.py
+
 +frontend  +  //前端文件夹
+
 |          + coupon.html
+
 |          + favorites.html
+
 |          + login.html
+
 |          + product-detail.html
+
 |          + product-list.html
+
 |          + register.html
+
 --
