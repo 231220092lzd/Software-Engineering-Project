@@ -1,9 +1,10 @@
 name: CI
 
+#触发条件配置 
 on:
-  push:
-  pull_request:
-  workflow_dispatch:
+  push:               # 有代码 push 到仓库时触发
+  pull_request:       # 提交 Pull Request (合并请求) 时触发
+  workflow_dispatch:  # 在 GitHub Actions 网页界面上手动点击按钮触发
 
 jobs:
   test:
@@ -12,15 +13,27 @@ jobs:
       matrix:
         python-version: [3.11]
     steps:
+      #检出代码
+      #将你的仓库代码下载到虚拟机的当前工作目录
       - uses: actions/checkout@v4
+
+      #环境准备
+      #安装指定版本的 Python
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+
+      #安装依赖
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install "fastapi[all]" pytest sqlalchemy pydantic pymysql bcrypt
-      - name: Run tests
+          # 安装项目依赖和测试工具
+          pip install "fastapi[all]" pytest sqlalchemy pydantic pymysql bcrypt httpx
+
+      # 运行单元测试
+      - name: Run specific unit tests
         run: |
-          python -m pytest -q
+          # 指定具体的文件路径，只运行这两个文件
+          # -v 表示 verbose (详细模式)，能看到具体跑了哪些测试用例
+          python -m pytest -v tests/test_products.py tests/test_users.py

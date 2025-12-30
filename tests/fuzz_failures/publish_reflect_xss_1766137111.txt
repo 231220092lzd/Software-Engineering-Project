@@ -1,0 +1,9 @@
+TEST: publish_reflect_xss
+PAYLOAD: '<script>alert(1)</script>'
+STATUS: 201
+HEADERS:
+content-length: 153
+content-type: application/json
+
+BODY:
+{"name":"<script>alert(1)</script>","price":1.23,"description":"<script>alert(1)</script>","image_url":"<script>alert(1)</script>","id":57,"seller_id":1}
