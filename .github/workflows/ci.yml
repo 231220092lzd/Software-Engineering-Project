@@ -1,10 +1,9 @@
 name: CI
 
-#触发条件配置 
 on:
-  push:               # 有代码 push 到仓库时触发
-  pull_request:       # 提交 Pull Request (合并请求) 时触发
-  workflow_dispatch:  # 在 GitHub Actions 网页界面上手动点击按钮触发
+  push:
+  pull_request:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -13,27 +12,26 @@ jobs:
       matrix:
         python-version: [3.11]
     steps:
-      #检出代码
-      #将仓库代码下载到虚拟机的当前工作目录
       - uses: actions/checkout@v4
 
-      #环境准备
-      #安装指定版本的 Python
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
-      #安装依赖
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          # 安装项目依赖和测试工具
-          pip install "fastapi[all]" pytest sqlalchemy pydantic pymysql bcrypt httpx jose
+          # --- 修复点 1: 修改依赖包名称 ---
+          # 将 'jose' 改为 'python-jose[cryptography]'
+          # 确保安装 python-multipart (fastapi[all]已包含，但为了保险可以显式写出)
+          pip install "fastapi[all]" pytest sqlalchemy pydantic pymysql bcrypt httpx "python-jose[cryptography]" python-multipart
 
-      # 运行单元测试
       - name: Run specific unit tests
+        # --- 修复点 2: 设置 PYTHONPATH ---
+        # 强制将当前目录(项目根目录)加入 Python 搜索路径
+        # 这样 tests/ 下的代码才能 import 根目录下的 models 和 api
+        env:
+          PYTHONPATH: .
         run: |
-          # 指定具体的文件路径，只运行这两个文件
-          # -v 表示 verbose (详细模式)，能看到具体跑了哪些测试用例
           python -m pytest -v tests/test_products_new.py tests/test_users_new.py
