@@ -74,12 +74,20 @@ def seed_data(db_session):
     hashed = get_password_hash("password123")
     user = models.User(username="alice", hashed_password=hashed.decode('utf-8'))
     db_session.add(user)
+
+    # 添加一个 admin 用户，用于测试管理员权限
+    hashed_admin = get_password_hash("root123")
+    admin = models.User(username="root", hashed_password=hashed_admin.decode('utf-8'), role="admin")
+    db_session.add(admin)
+
     db_session.commit()
     db_session.refresh(user)
+    db_session.refresh(admin)
 
     # 返回创建的实体以备测试使用
     return {
         "seller": seller,
         "products": [p1, p2],
-        "user": user
+        "user": user,
+        "admin": admin
     }

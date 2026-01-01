@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>我的收藏 - 京西网</title>
+    <!-- 样式保持你的原样 -->
     <style>
         body { font-family: sans-serif; background-color: #fef4f4; }
         .container { max-width: 1200px; margin: 0 auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; min-height: 80vh; }
@@ -26,31 +27,35 @@
             <span class="logo">我的收藏</span>
             <a href="/product-list.html" class="back-link">返回商品列表</a>
         </div>
-        <div id="favorites-list" class="favorites-list">
-            <!-- 收藏的商品将通过JS动态插入这里 -->
-        </div>
+        <div id="favorites-list" class="favorites-list"></div>
     </div>
 
     <script>
-    // favorites.html script (完整替换)
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
         const favoritesContainer = document.getElementById('favorites-list');
-        const userId = sessionStorage.getItem('userId');
 
         async function loadFavorites() {
-            if (!userId) {
+            const token = sessionStorage.getItem('accessToken');
+            if (!token) {
                 favoritesContainer.innerHTML = '<div class="empty-message">请先<a href="/login.html">登录</a>查看您的收藏。</div>';
                 return;
             }
         
             try {
-                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites`);
-                if (!response.ok) {
-                    throw new Error('Failed to load favorites');
+                // 修复点：URL 不再包含 userId
+                const response = await fetch(`${API_BASE_URL}/users/favorites`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (response.status === 401) {
+                    favoritesContainer.innerHTML = '<div class="empty-message">登录已过期，请重新<a href="/login.html">登录</a>。</div>';
+                    return;
                 }
+
+                if (!response.ok) throw new Error('Failed to load favorites');
+                
                 const products = await response.json();
-            
-                favoritesContainer.innerHTML = ''; // 清空
+                favoritesContainer.innerHTML = '';
             
                 if (products.length === 0) {
                     favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
@@ -62,7 +67,7 @@
                     itemElement.className = 'favorite-item';
                     itemElement.id = `favorite-item-${product.id}`;
                     itemElement.innerHTML = `
-                        <img src="https://via.placeholder.com/120x120.png?text=Product+Image" alt="${product.name}">
+                        <img src="https://via.placeholder.com/120x120.png?text=Product" alt="${product.name}">
                         <div class="item-details">
                             <h3>${product.name}</h3>
                             <p>${product.description}</p>
@@ -72,7 +77,6 @@
                     `;
                     favoritesContainer.appendChild(itemElement);
                 });
-            
             } catch (error) {
                 console.error('加载收藏失败:', error);
                 favoritesContainer.innerHTML = '<div class="empty-message">加载收藏失败，请稍后再试。</div>';
@@ -80,19 +84,18 @@
         }
 
         async function removeFavorite(productId) {
-            if (!userId) return;
+            const token = sessionStorage.getItem('accessToken');
+            if (!token) return;
         
             try {
-                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites/${productId}`, {
-                    method: 'DELETE'
+                // 修复点：URL 不再包含 userId
+                const response = await fetch(`${API_BASE_URL}/users/favorites/${productId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
-                    // 从DOM中移除元素以立即反馈
                     const itemToRemove = document.getElementById(`favorite-item-${productId}`);
-                    if (itemToRemove) {
-                        itemToRemove.remove();
-                    }
-                    // 检查是否为空
+                    if (itemToRemove) itemToRemove.remove();
                     if (favoritesContainer.children.length === 0) {
                         favoritesContainer.innerHTML = '<div class="empty-message">您的收藏夹还是空的，快去逛逛吧！</div>';
                     }

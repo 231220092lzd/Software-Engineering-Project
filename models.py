@@ -1,11 +1,9 @@
-# models.py (完整修改版)
-
 from sqlalchemy import (Column, Integer, String, Float, TIMESTAMP, ForeignKey, Table)
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 
-# 用户-商品 收藏关联表 (多对多关系)
+# 用户-商品 收藏关联表
 user_favorites = Table('user_favorites', Base.metadata,
     Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
     Column('product_id', Integer, ForeignKey('products.id'), primary_key=True)
@@ -13,13 +11,11 @@ user_favorites = Table('user_favorites', Base.metadata,
 
 class User(Base):
     __tablename__ = "users"
-
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    role = Column(String(20), nullable=False, server_default="customer")
     created_at = Column(TIMESTAMP, server_default=func.now())
-
-    # 建立与收藏商品的关系
     favorite_products = relationship("Product", secondary=user_favorites, back_populates="favorited_by_users")
 
 class Seller(Base):
@@ -27,20 +23,16 @@ class Seller(Base):
     id = Column(Integer, primary_key=True, index=True)
     shop_name = Column(String(100), nullable=False)
     contact_info = Column(String(100))
-    
     products = relationship("Product", back_populates="seller")
 
 class Product(Base):
     __tablename__ = "products"
-
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), nullable=False)
     price = Column(Float, nullable=False)
     description = Column(String(500))
-    # 使用 ForeignKey 关联到商家
     seller_id = Column(Integer, ForeignKey("sellers.id"))
-    image_url = Column(String(255)) # 简化为单个图片URL
-
+    image_url = Column(String(255))
     seller = relationship("Seller", back_populates="products")
     favorited_by_users = relationship("User", secondary=user_favorites, back_populates="favorite_products")
 
@@ -51,5 +43,7 @@ class Comment(Base):
     likes = Column(Integer, default=0)
     
     user_id = Column(Integer, ForeignKey("users.id"))
-    product_id = Column(Integer, ForeignKey("products.id")) # 评论应与商品关联
-
+    product_id = Column(Integer, ForeignKey("products.id"))
+    
+    # --- 修复点：添加 user 关系，以便查询评论时能获取用户名 ---
+    user = relationship("User") 

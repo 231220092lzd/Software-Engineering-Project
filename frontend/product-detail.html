@@ -1,4 +1,3 @@
-<!-- frontend/product-detail.html -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -7,24 +6,44 @@
     <style>
         body { font-family: sans-serif; background-color: #fef4f4; }
         .container { max-width: 1200px; margin: 20px auto; padding: 20px; background: white; border: 2px solid #f28b82; border-radius: 10px; display: flex; gap: 40px; }
+        
+        /* 左侧商品信息 */
         .product-info { flex: 1; }
-        .product-info img { max-width: 100%; border: 1px solid #eee; }
-        .product-info h1 { font-size: 24px; }
-        .product-info .price { color: #ea4335; font-size: 28px; font-weight: bold; }
-        .product-actions button { padding: 15px 30px; font-size: 18px; margin-right: 15px; border-radius: 8px; cursor: pointer; }
+        .product-info img { max-width: 100%; border: 1px solid #eee; border-radius: 8px; }
+        .product-info h1 { font-size: 24px; margin-top: 15px; }
+        .product-info .price { color: #ea4335; font-size: 28px; font-weight: bold; margin: 10px 0; }
+        .product-actions { margin-top: 20px; }
+        .product-actions button { padding: 15px 30px; font-size: 18px; margin-right: 15px; border-radius: 8px; cursor: pointer; transition: opacity 0.2s; }
+        .product-actions button:hover { opacity: 0.9; }
         .buy-btn { background-color: #ea4335; color: white; border: none; }
-        .fav-btn { background-color: #fce8e6; border: 1px solid #f28b82; }
-        .reviews { flex: 1; border-left: 1px solid #eee; padding-left: 40px; }
-        .reviews-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #ea4335; padding-bottom: 10px; }
+        .fav-btn { background-color: #fce8e6; border: 1px solid #f28b82; color: #ea4335; }
+
+        /* 右侧评论区 */
+        .reviews { flex: 1; border-left: 1px solid #eee; padding-left: 40px; display: flex; flex-direction: column; }
+        .reviews-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #ea4335; padding-bottom: 10px; margin-bottom: 15px; }
+        
+        /* 新增：发表评论区域样式 */
+        .add-comment-box { background-color: #f9f9f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #eee; }
+        .add-comment-box h4 { margin-top: 0; margin-bottom: 10px; color: #333; }
+        .add-comment-box textarea { width: 100%; height: 80px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-family: sans-serif; resize: vertical; }
+        .add-comment-box .btn-row { text-align: right; margin-top: 10px; }
+        .submit-comment-btn { background-color: #ea4335; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; }
+        .login-tip { font-size: 14px; color: #666; text-align: center; padding: 20px; background: #f9f9f9; border-radius: 8px; margin-bottom: 20px;}
+        .login-tip a { color: #ea4335; text-decoration: none; font-weight: bold; }
+
+        /* 评论列表样式 */
+        #review-list { flex-grow: 1; overflow-y: auto; max-height: 600px; }
         .review-card { border-bottom: 1px solid #eee; padding: 15px 0; }
-        .review-card p { margin: 5px 0; }
-        .review-author { display: flex; align-items: center; color: #555; }
-        .review-author .avatar { width: 30px; height: 30px; border-radius: 50%; background: #ccc; margin-right: 10px; }
-        .review-reply { font-size: 14px; color: #888; background: #f7f7f7; padding: 10px; margin-top: 10px; border-radius: 5px; }
+        .review-card:last-child { border-bottom: none; }
+        .review-card p { margin: 8px 0; line-height: 1.5; }
+        .review-author { display: flex; align-items: center; color: #555; font-size: 14px; }
+        .review-author .avatar { width: 30px; height: 30px; border-radius: 50%; background: #e0e0e0; margin-right: 10px; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 12px; }
+        .review-reply { font-size: 13px; color: #666; background: #f0f0f0; padding: 8px 12px; margin-top: 8px; border-radius: 4px; }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 左侧：商品详情 -->
         <div class="product-info">
             <h3 style="color:#ea4335">京西！好物热卖！</h3>
             <img id="product-image" src="https://via.placeholder.com/400x400.png?text=Loading..." alt="商品图片">
@@ -32,133 +51,220 @@
             <p id="product-description">...</p>
             <p class="price" id="product-price">¥ ...</p>
             <div class="product-actions">
-                <button class="buy-btn">立即购买</button>
+                <button class="buy-btn" onclick="alert('功能开发中...')">立即购买</button>
                 <button id="add-to-favorites-btn" class="fav-btn">☆ 收藏</button>
             </div>
         </div>
+
+        <!-- 右侧：评论区 -->
         <div class="reviews">
             <div class="reviews-header">
                 <h2>买家评价</h2>
-                <span id="review-rating">好评率 ...%</span>
+                <span id="review-count">共 0 条</span>
             </div>
+
+            <!-- 新增：发表评论表单 -->
+            <div id="comment-form-section">
+                <!-- 如果已登录显示这个 -->
+                <div id="logged-in-form" class="add-comment-box" style="display: none;">
+                    <h4>发表您的评价</h4>
+                    <textarea id="comment-content" placeholder="商品是否满足您的期待？说说您的使用心得..."></textarea>
+                    <div class="btn-row">
+                        <button id="submit-comment-btn" class="submit-comment-btn">发布评论</button>
+                    </div>
+                </div>
+                <!-- 如果未登录显示这个 -->
+                <div id="logged-out-tip" class="login-tip">
+                    <a href="/login.html">登录</a> 后即可发表评论
+                </div>
+            </div>
+
             <div id="review-list">
-                <!-- 评论将通过JS动态插入这里 -->
+                <!-- 评论列表 JS 填充 -->
+                <p>正在加载评论...</p>
             </div>
         </div>
     </div>
+
     <script>
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
         const reviewList = document.getElementById('review-list');
-        // --- 核心功能函数 ---
-        // 修正 1: 合并了两个重复的函数，并修正了 product.product_id
+        const token = sessionStorage.getItem('accessToken');
+        const userId = sessionStorage.getItem('userId');
+
+        // --- 1. 初始化页面状态 (检查登录) ---
+        function checkLoginStatus() {
+            const loggedInForm = document.getElementById('logged-in-form');
+            const loggedOutTip = document.getElementById('logged-out-tip');
+
+            if (token) {
+                loggedInForm.style.display = 'block';
+                loggedOutTip.style.display = 'none';
+            } else {
+                loggedInForm.style.display = 'none';
+                loggedOutTip.style.display = 'block';
+            }
+        }
+
+        // --- 2. 获取商品详情 ---
         async function fetchProductDetails(productId) {
             try {
                 const response = await fetch(`${API_BASE_URL}/products/${productId}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error('Product not found');
                 const product = await response.json();
 
-                // 更新页面内容
                 document.getElementById('product-name').textContent = product.name;
                 document.getElementById('product-description').textContent = product.description;
                 document.getElementById('product-price').textContent = `¥ ${product.price}`;
+                
+                // 设置图片 (如果有image_url则使用，否则用占位图)
+                const imgUrl = product.image_url && product.image_url.startsWith('http') 
+                    ? product.image_url 
+                    : `https://via.placeholder.com/400x400.png?text=${encodeURIComponent(product.name)}`;
+                document.getElementById('product-image').src = imgUrl;
 
-                // 修正 2: 使用正确的属性名 'product.id' 来设置 data-product-id
                 document.getElementById('add-to-favorites-btn').setAttribute('data-product-id', product.id);
 
-                // 获取商品详情后，根据seller_id获取评论
-                fetchReviews(product.seller_id);
+                // 获取评论
+                fetchReviews(product.id);
             } catch (error) {
-                console.error('获取商品详情失败:', error);
-                document.querySelector('.product-info').innerHTML = '<h1>商品加载失败</h1>';
+                console.error('Error:', error);
+                document.querySelector('.product-info').innerHTML = '<h1>未找到商品信息</h1>';
             }
         }
-        async function fetchReviews(sellerId) {
+
+        // --- 3. 获取并渲染评论 ---
+        async function fetchReviews(productId) {
             try {
-                const response = await fetch(`${API_BASE_URL}/sellers/${sellerId}/comments`);
+                const response = await fetch(`${API_BASE_URL}/products/${productId}/comments`);
                 const reviews = await response.json();
+                
+                document.getElementById('review-count').textContent = `共 ${reviews.length} 条`;
                 renderReviews(reviews);
             } catch (error) {
                 console.error('获取评论失败:', error);
-                reviewList.innerHTML = '<p>评论加载失败。</p>';
+                reviewList.innerHTML = '<p>加载评论失败。</p>';
             }
         }
+
         function renderReviews(reviews) {
             reviewList.innerHTML = '';
             if (reviews.length === 0) {
-                 reviewList.innerHTML = '<p>暂无评论。</p>';
+                 reviewList.innerHTML = '<p style="color:#999; text-align:center; margin-top:20px;">暂无评论，快来抢沙发吧！</p>';
                  return;
             }
-            reviews.forEach(review => {
+            // 倒序排列，最新的在前面
+            reviews.reverse().forEach(review => {
                 const card = document.createElement('div');
                 card.className = 'review-card';
+                
+                // 优先显示 username，如果没有则显示 ID
+                const displayName = review.username || `用户 ${review.user_id}`;
+                //以此生成一个简单的头像首字母
+                const avatarChar = displayName.charAt(0).toUpperCase();
+
                 card.innerHTML = `
                     <div class="review-author">
-                        <div class="avatar"></div>
-                        <span>用户 ${review.user_id}</span>
+                        <div class="avatar">${avatarChar}</div>
+                        <span>${displayName}</span>
                     </div>
                     <p>${review.content}</p>
-                    <div class="review-reply">商家回复：感谢支持</div>
+                    ${review.likes > 0 ? `<div style="font-size:12px; color:#999;">👍 ${review.likes} 人觉得很赞</div>` : ''}
                 `;
                 reviewList.appendChild(card);
             });
         }
-        // 收藏功能函数 (这个函数本身是正确的，无需修改)
+
+        // --- 4. 提交评论功能 ---
+        async function submitComment(productId) {
+            const contentInput = document.getElementById('comment-content');
+            const content = contentInput.value.trim();
+
+            if (!content) {
+                alert('请输入评论内容！');
+                return;
+            }
+            if (content.length < 5) {
+                alert('评论内容至少需要5个字哦。');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/products/${productId}/comments`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // 必须带 Token
+                    },
+                    body: JSON.stringify({ content: content })
+                });
+
+                if (response.status === 201) {
+                    alert('评论发布成功！');
+                    contentInput.value = ''; // 清空输入框
+                    fetchReviews(productId); // 刷新评论列表
+                } else {
+                    const error = await response.json();
+                    alert(`发布失败: ${error.detail || '未知错误'}`);
+                }
+            } catch (error) {
+                console.error('发布评论错误:', error);
+                alert('网络连接失败，请稍后再试。');
+            }
+        }
+
+        // --- 5. 收藏功能 ---
         async function addFavorite(productId) {
-            const userId = sessionStorage.getItem('userId');
-            if (!userId) {
+            if (!token) {
                 alert('请先登录！');
                 window.location.href = '/login.html';
                 return;
             }
-            if (!productId || productId === 'undefined' || productId === 'null') { // 增加更严格的检查
-                alert('无法收藏，商品ID无效。');
-                console.error("Product ID is invalid:", productId);
-                return;
-            }
             try {
-                const response = await fetch(`${API_BASE_URL}/users/${userId}/favorites/${productId}`, {
+                // 注意：这里 URL 已经去掉了 userId
+                const response = await fetch(`${API_BASE_URL}/users/favorites/${productId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': `Bearer ${token}` 
+                    }
                 });
                 if (response.ok) {
-                    alert('商品已成功添加到收藏夹！');
+                    alert('已收藏！');
                 } else {
-                    const errorData = await response.json();
-                    if (errorData.detail && typeof errorData.detail === 'string') {
-                        alert(`收藏失败: ${errorData.detail}`);
-                    } else {
-                        alert('收藏失败，请求参数有误。');
-                        console.error('收藏失败，后端返回的详细错误:', errorData);
-                    }
+                    const error = await response.json();
+                    alert(`收藏失败: ${error.detail}`);
                 }
             } catch (error) {
-                console.error('收藏请求的网络连接失败:', error);
-                alert('无法连接到服务器，请稍后再试。');
+                alert('请求失败');
             }
         }
-        // --- 事件监听器 ---
-        // 页面加载时，获取URL中的ID并拉取数据
+
+        // --- 事件监听与初始化 ---
         document.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus(); // 1. 检查登录态显示不同界面
+
             const params = new URLSearchParams(window.location.search);
             const productId = params.get('id');
+
             if (productId) {
-                fetchProductDetails(productId);
+                fetchProductDetails(productId); // 2. 加载商品和评论
+
+                // 绑定发表评论按钮事件
+                document.getElementById('submit-comment-btn').addEventListener('click', () => {
+                    submitComment(productId);
+                });
             } else {
-                document.querySelector('.container').innerHTML = '<h1>未找到该商品</h1><p>请返回商品列表页。</p>';
+                document.querySelector('.container').innerHTML = '<h1>参数错误</h1>';
             }
         });
-        // 为收藏按钮添加点击事件监听
+
+        // 绑定收藏按钮事件
         document.getElementById('add-to-favorites-btn').addEventListener('click', function() {
-            const productId = this.getAttribute('data-product-id');
-            if (productId) {
-                addFavorite(productId);
-            } else {
-                // 这个警告会在商品详情还没加载出来时点击按钮触发
-                alert('无法收藏，请等待商品信息加载完成。');
-            }
+            const pid = this.getAttribute('data-product-id');
+            if(pid) addFavorite(pid);
         });
+
     </script>
 </body>
 </html>

@@ -11,10 +11,18 @@ The project is under construction.
 ## How to run
 pip install "fastapi[all]"
 
-create relevant databases 
+set up local database:
+CREATE DATABASE my_ecommerce_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+make sure the username and password are correct in database.py
 
 uvicorn main:app --reload
 
+then use ctrl-c to close after "应用已启动!"
+
+python seed.py（to fill the test data）
+
+uvicorn main:app --reload
 访问网站页面:http://127.0.0.1:8000
 访问API文档:http://127.0.0.1:8000/api/docs
 

@@ -68,12 +68,18 @@
 
     <script>
         const API_BASE_URL = 'http://127.0.0.1:8000/api';
+        const token = sessionStorage.getItem('accessToken');
+
+    // 安全检查
+        if (sessionStorage.getItem('userRole') !== 'admin' || !token) {
+            alert('您没有权限访问此页面！');
+            window.location.href = '/login.html';
+        }
         async function fetchAndRenderProducts() {
             const productListDiv = document.getElementById('admin-product-list');
             try {
-                const response = await fetch(`${API_BASE_URL}/products`);
+                const response = await fetch(`${API_BASE_URL}/products`); // 公开接口不需要 token
                 if (!response.ok) throw new Error('获取商品失败');
-
                 const products = await response.json();
 
                 if (products.length === 0) {
@@ -130,7 +136,10 @@
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/products`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` // 关键
+                    },
                     body: JSON.stringify({ name, description, price })
                 });
 
@@ -161,7 +170,10 @@
 
             try {
                 const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: { 
+                    'Authorization': `Bearer ${token}` // 关键
+                }
                 });
 
                 if (response.status === 204) {

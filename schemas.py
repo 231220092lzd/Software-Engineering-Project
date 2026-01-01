@@ -13,9 +13,10 @@ class UserCreate(UserBase):
 
 class User(UserBase):
     id: int
+    role: str
 
     class Config:
-        from_attributes = True # 修正点
+        from_attributes = True
 
 # --- Seller Schemas ---
 class SellerBase(BaseModel):
@@ -29,7 +30,7 @@ class Seller(SellerBase):
     id: int
     
     class Config:
-        from_attributes = True # 修正点
+        from_attributes = True
 
 # --- Product Schemas ---
 class ProductBase(BaseModel):
@@ -46,27 +47,19 @@ class Product(ProductBase):
     seller_id: int
 
     class Config:
-        from_attributes = True # 修正点
+        from_attributes = True
 
 # --- Comment Schemas ---
 class CommentBase(BaseModel):
     content: str = Field(..., min_length=5, max_length=500)
-
 class CommentCreate(CommentBase):
     pass
-
 class Comment(CommentBase):
     id: int
     user_id: int
     product_id: int
     likes: int
-
+    # --- 修复点：新增 username 字段 ---
+    username: Optional[str] = None 
     class Config:
-        from_attributes = True # 修正点
-        
-# --- 用于用户收藏列表的特殊 Schema ---
-class UserWithFavorites(User):
-    favorite_products: List[Product] = []
-
-    class Config:
-        from_attributes = True # 修正点
+        from_attributes = True

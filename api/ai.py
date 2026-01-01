@@ -15,8 +15,8 @@ router = APIRouter(
     tags=["AI Assistant"]
 )
 
-# Get the API Key from environment variables
-DEEPSEEK_API_KEY = "sk-4d8a1fced07649f7853a192a1a7c26b6"
+# Get the API Key from environment variables (do NOT hardcode secrets)
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
 # 2. Create an OpenAI client that is configured to connect to DeepSeek's API
 # This is the core of the change. We are telling the official OpenAI library
@@ -24,10 +24,10 @@ DEEPSEEK_API_KEY = "sk-4d8a1fced07649f7853a192a1a7c26b6"
 if DEEPSEEK_API_KEY:
     client = openai.OpenAI(
         api_key=DEEPSEEK_API_KEY,
-        base_url="https://api.deepseek.com/v1"  # Note the "/v1" at the end
+        base_url="https://api.deepseek.com/v1"
     )
 else:
-    client = None
+    client = None  # 保持 None，以便在缺少密钥时返回 500 错误并提示配置问题
 
 # Create our core API endpoint
 @router.post("/chat")

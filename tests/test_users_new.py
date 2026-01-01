@@ -1,7 +1,6 @@
 import pytest
 from api import users
 
-
 def test_get_password_hash_and_verify():
     pwd = "mysecret"
     hashed = users.get_password_hash(pwd)
@@ -59,49 +58,49 @@ def test_add_and_get_and_remove_favorite(client, seed_data):
     token = login_resp.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # 添加收藏
-    r = client.post(f"/api/users/{user.id}/favorites/{p1.id}", headers=headers)
+    # 添加收藏 (修复点：URL 不再包含 user.id)
+    r = client.post(f"/api/users/favorites/{p1.id}", headers=headers)
     assert r.status_code == 201
     assert r.json()["status"] == "success"
 
     # 重复添加应返回 400
-    r2 = client.post(f"/api/users/{user.id}/favorites/{p1.id}", headers=headers)
+    r2 = client.post(f"/api/users/favorites/{p1.id}", headers=headers)
     assert r2.status_code == 400
 
-    # 获取收藏列表
-    r3 = client.get(f"/api/users/{user.id}/favorites", headers=headers)
+    # 获取收藏列表 (修复点：URL 不再包含 user.id)
+    r3 = client.get(f"/api/users/favorites", headers=headers)
     assert r3.status_code == 200
     favs = r3.json()
     assert isinstance(favs, list)
     assert any(item["id"] == p1.id for item in favs)
 
-    # 删除收藏
-    r4 = client.delete(f"/api/users/{user.id}/favorites/{p1.id}", headers=headers)
+    # 删除收藏 (修复点：URL 不再包含 user.id)
+    r4 = client.delete(f"/api/users/favorites/{p1.id}", headers=headers)
     assert r4.status_code == 204
 
     # 再删除一次（不存在）仍然返回 204
-    r5 = client.delete(f"/api/users/{user.id}/favorites/{p1.id}", headers=headers)
+    r5 = client.delete(f"/api/users/favorites/{p1.id}", headers=headers)
     assert r5.status_code == 204
 
 
-def test_add_favorite_user_or_product_not_found(client, seed_data):
-    # 使用 admin token 进行操作，应该返回 404（用户或商品不存在）
+def test_add_favorite_product_not_found(client, seed_data):
+    # 修复点：添加了 seed_data 参数，确保 admin 用户存在
     admin = seed_data["admin"]
     login_resp = client.post("/api/users/login", json={"username": admin.username, "password": "root123"})
-    headers = {"Authorization": f"Bearer {login_resp.json()["access_token"]}"}
-    r = client.post(f"/api/users/9999/favorites/9999", headers=headers)
+    headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
+    
+    # 测试添加不存在的商品 ID
+    r = client.post(f"/api/users/favorites/9999", headers=headers)
     assert r.status_code == 404
+    assert r.json()['detail'] == "Product not found"
 
 
-def test_get_favorites_user_not_found(client):
-    admin_login = client.post("/api/users/login", json={"username": "root", "password": "root123"})
-    headers = {"Authorization": f"Bearer {admin_login.json()["access_token"]}"}
-    r = client.get(f"/api/users/9999/favorites", headers=headers)
-    assert r.status_code == 404
+# 原 test_get_favorites_user_not_found 已废弃
+# 因为现在的 API 结构 /users/favorites 隐式使用 Token 中的 ID，
+# 不存在 "URL 中的 User ID 不存在" 这种 404 错误。
+# 如果 Token 无效，会返回 401。
 
-
-def test_remove_favorite_user_or_product_not_found(client):
-    admin_login = client.post("/api/users/login", json={"username": "root", "password": "root123"})
-    headers = {"Authorization": f"Bearer {admin_login.json()["access_token"]}"}
-    r = client.delete(f"/api/users/9999/favorites/9999", headers=headers)
-    assert r.status_code == 404
+def test_access_favorites_without_token(client):
+    # 测试未登录访问收藏
+    r = client.get("/api/users/favorites")
+    assert r.status_code == 401

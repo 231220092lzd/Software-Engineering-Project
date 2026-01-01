@@ -18,8 +18,8 @@
 <body>
     <div class="login-container">
         <form id="login-form">
-            <input type="text" id="username" name="username" placeholder="Login ID" value="Alice" required>
-            <input type="password" id="password" name="password" placeholder="Password" value="123456" required>
+            <input type="text" id="username" name="username" placeholder="用户名" required>
+            <input type="password" id="password" name="password" placeholder="密码" required>
             <button type="submit" class="login-btn">同意协议并登录</button>
         </form>
         <div style="margin-top: 20px; text-align: center;">
@@ -56,6 +56,10 @@
                 if (response.ok) {
                     const result = await response.json();
                     alert('登录成功！');
+                    // 存储 access token 以便后续受保护请求使用
+                    if (result.access_token) {
+                        sessionStorage.setItem('accessToken', result.access_token);
+                    }
                     
                     // 根据后端返回的角色进行跳转
                     if (result.role === 'admin') {
